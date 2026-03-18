@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+     MASTER / DOMAIN CONTROLLER
+     Host: primary
+     IP:   10.35.10.10
+     Path: /u01/app/dc/wildfly2/wildfly-30.0.1.Final/domain/configuration/
+     ============================================================ -->
+
+<host xmlns="urn:jboss:domain:20.0" name="primary">
+
+    <!-- This host IS the domain controller -->
+    <domain-controller>
+        <local/>
+    </domain-controller>
+
+    <!-- Management interface - listens on localhost -->
+    <interfaces>
+        <interface name="management">
+            <inet-address value="${jboss.bind.address.management:127.0.0.1}"/>
+        </interface>
+    </interfaces>
+
+    <!-- Management console accessible at http://10.35.10.10:9990 -->
+    <management>
+        <management-interfaces>
+            <http-interface http-authentication-factory="management-http-authentication">
+                <http-upgrade enabled="true" sasl-authentication-factory="management-sasl-authentication"/>
+                <socket interface="management" port="${jboss.management.http.port:9990}"/>
+            </http-interface>
+        </management-interfaces>
+    </management>
+
+    <!-- JVM settings for servers on this host -->
+    <jvms>
+        <jvm name="default">
+            <heap size="64m" max-size="256m"/>
+            <jvm-options>
+                <option value="-server"/>
+                <option value="-XX:MetaspaceSize=96m"/>
+                <option value="-XX:MaxMetaspaceSize=256m"/>
+            </jvm-options>
+        </jvm>
+    </jvms>
+
+    <!-- Security: Elytron with DIGEST-MD5 for management authentication -->
+    <profile>
+        <subsystem xmlns="urn:wildfly:elytron:18.0" final-providers="combined-providers" disallowed-providers="OracleUcrypto">
+            <security-domains>
+                <security-domain name="ManagementDomain" default-realm="ManagementRealm" permission-mapper="default-permission-mapper">
+                    <realm name="ManagementRealm" role-decoder="groups-to-roles"/>
+                    <realm name="local" role-mapper="super-user-mapper"/>
+                </security-domain>
+            </security-domains>
+            <security-realms>
+                <properties-realm name="ManagementRealm">
+                    <users-properties path="mgmt-users.properties" relative-to="jboss.domain.config.dir" digest-realm-name="ManagementRealm"/>
+                    <groups-properties path="mgmt-groups.properties" relative-to="jboss.domain.config.dir"/>
+                </properties-realm>
+            </security-realms>
+        </subsystem>
+    </profile>
+
+</host>
