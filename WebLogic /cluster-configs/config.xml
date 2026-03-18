@@ -1,0 +1,139 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- ============================================================
+     WEBLOGIC DOMAIN CONFIGURATION
+     Domain name:    wl_server
+     Version:        12.2.1.4.0
+     Admin console:  http://192.168.100.11:7001/console
+     Node Manager:   192.168.100.11:5556
+     ============================================================ -->
+
+<domain xmlns="http://xmlns.oracle.com/weblogic/domain">
+
+  <name>wl_server</name>
+  <domain-version>12.2.1.4.0</domain-version>
+
+  <!-- =========================================================
+       SERVERS
+       AdminServer  - Domain controller, port 7001
+       ms1          - Managed server, Cluster-0, port 8001
+       ms2          - Managed server, Cluster-0, port 8002
+       ms3          - Load balancer (standalone), port 8003
+       ========================================================= -->
+
+  <server>
+    <name>AdminServer</name>
+    <machine>Machine-0</machine>
+    <!-- HTTP: 7001 | HTTPS: 7002 (disabled in this lab) -->
+    <ssl>
+      <enabled>false</enabled>
+      <listen-port>7002</listen-port>
+    </ssl>
+  </server>
+
+  <server>
+    <name>ms1</name>
+    <machine>Machine-0</machine>
+    <listen-port>8001</listen-port>
+    <cluster>Cluster-0</cluster>
+    <!-- JTA migratable target - allows JTA migration within cluster -->
+    <jta-migratable-target>
+      <user-preferred-server>ms1</user-preferred-server>
+      <cluster>Cluster-0</cluster>
+    </jta-migratable-target>
+  </server>
+
+  <server>
+    <name>ms2</name>
+    <machine>Machine-0</machine>
+    <listen-port>8002</listen-port>
+    <cluster>Cluster-0</cluster>
+    <!-- JTA migratable target - allows JTA migration within cluster -->
+    <jta-migratable-target>
+      <user-preferred-server>ms2</user-preferred-server>
+      <cluster>Cluster-0</cluster>
+    </jta-migratable-target>
+  </server>
+
+  <server>
+    <!-- ms3 acts as load balancer - not part of Cluster-0 -->
+    <name>ms3</name>
+    <machine>Machine-0</machine>
+    <listen-port>8003</listen-port>
+  </server>
+
+  <!-- =========================================================
+       CLUSTER
+       Cluster-0 uses unicast messaging (no multicast needed)
+       Members: ms1, ms2
+       Oracle datasource (MyOracleDS) targeted to this cluster
+       ========================================================= -->
+  <cluster>
+    <name>Cluster-0</name>
+    <cluster-messaging-mode>unicast</cluster-messaging-mode>
+  </cluster>
+
+  <!-- =========================================================
+       MACHINE & NODE MANAGER
+       Node Manager allows AdminServer to start/stop
+       managed servers remotely
+       ========================================================= -->
+  <machine>
+    <name>Machine-0</name>
+    <node-manager>
+      <nm-type>Plain</nm-type>
+      <listen-address>192.168.100.11</listen-address>
+      <listen-port>5556</listen-port>
+    </node-manager>
+  </machine>
+
+  <!-- =========================================================
+       JMS
+       examplesJMSServer - persistent JMS with JDBC store
+       WseeJMSServer     - WebService reliable messaging
+       ========================================================= -->
+  <jms-server>
+    <name>examplesJMSServer</name>
+    <target>AdminServer</target>
+    <persistent-store>exampleJDBCStore</persistent-store>
+  </jms-server>
+
+  <!-- =========================================================
+       JDBC DATASOURCES
+       MyOracleDS  - Oracle datasource targeted to Cluster-0
+                     (both ms1 and ms2 use this datasource)
+       ========================================================= -->
+  <jdbc-system-resource>
+    <name>MyOracleDS</name>
+    <!-- Targeted to Cluster-0 = available on ms1 and ms2 -->
+    <target>Cluster-0</target>
+    <descriptor-file-name>jdbc/MyOracleDS-5495-jdbc.xml</descriptor-file-name>
+  </jdbc-system-resource>
+
+  <!-- =========================================================
+       SECURITY
+       Default realm: myrealm
+       Authenticator: DefaultAuthenticator
+       Role mapper:   XACMLRoleMapper
+       Password policy: min 8 chars, min 1 numeric/special char
+       ========================================================= -->
+  <security-configuration>
+    <default-realm>myrealm</default-realm>
+    <node-manager-username>weblogic</node-manager-username>
+    <!-- Passwords stored AES256 encrypted - never in plain text -->
+    <node-manager-password-encrypted>**REDACTED**</node-manager-password-encrypted>
+  </security-configuration>
+
+  <!-- =========================================================
+       JTA
+       Transaction timeout: 500 seconds
+       Migratable targets allow JTA recovery migration
+       between cluster members
+       ========================================================= -->
+  <jta>
+    <timeout-seconds>500</timeout-seconds>
+  </jta>
+
+  <admin-server-name>AdminServer</admin-server-name>
+
+</domain>
