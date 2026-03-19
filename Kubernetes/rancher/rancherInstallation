@@ -1,0 +1,47 @@
+# Rancher Installation on Rocky Linux 10
+
+## Install RKE2
+curl -sfL https://get.rke2.io | sudo sh -
+sudo systemctl enable rke2-server.service
+sudo systemctl start rke2-server.service
+
+## Configure kubectl
+mkdir -p ~/.kube
+sudo cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+sudo chown $(id -u):$(id -g) ~/.kube/config
+echo 'export PATH=$PATH:/var/lib/rancher/rke2/bin' >> ~/.bashrc
+source ~/.bashrc
+
+## Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+## Install cert-manager
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm upgrade --install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --set installCRDs=true
+
+## Install Rancher
+helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+kubectl create namespace cattle-system
+helm install rancher rancher-latest/rancher \
+  --namespace cattle-system \
+  --set hostname=rancher.local \
+  --set bootstrapPassword=admin \
+  --set replicas=1
+
+## Verify
+kubectl -n cattle-system rollout status deploy/rancher
+
+## Configure Firewall for Kubernetes
+sudo firewall-cmd --permanent --add-source=10.42.0.0/16
+sudo firewall-cmd --permanent --add-source=10.43.0.0/16
+sudo firewall-cmd --permanent --add-port=80/tcp
+sudo firewall-cmd --permanent --add-port=443/tcp
+sudo firewall-cmd --permanent --add-port=6443/tcp
+sudo firewall-cmd --reload
+
+## Fix /etc/hosts
+echo "192.168.80.129  rancher.local" | sudo tee -a /etc/hosts
