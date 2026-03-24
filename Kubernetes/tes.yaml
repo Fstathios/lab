@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tes
+  name: tes
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tes
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1  
+  template:
+    metadata:
+      labels:
+        app: tes
+    spec:
+      containers:
+        - image: httpd:2.4.66-alpine3.22
+          name: httpd
+          resources: {}
+status: {}
