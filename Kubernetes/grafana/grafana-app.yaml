@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana-community.github.io/helm-charts
+    chart: grafana
+    targetRevision: 11.6.0 
+    helm:
+      values: |
+        adminPassword: "pass123"
+        
+        persistence:
+          enabled: true
+          size: 10Gi
+          accessModes:
+            - ReadWriteOnce
+
+        ingress:
+          enabled: true
+          ingressClassName: nginx # ή traefik, ανάλογα τι έχεις
+          annotations:
+            kubernetes.io/tls-acme: "true"
+          hosts:
+            - grafana.lab.internal
+          path: /
+
+      
+        sidecar:
+          dashboards:
+            enabled: true
+            label: grafana_dashboard  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grafana
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
