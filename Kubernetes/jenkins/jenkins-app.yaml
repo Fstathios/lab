@@ -13,11 +13,14 @@ spec:
       values: |
         controller:
           serviceType: NodePort
-          admin
+          admin:
             password: "admin123"
         persistence:
           enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
-  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
