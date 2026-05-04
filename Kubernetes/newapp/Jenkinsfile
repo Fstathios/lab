@@ -6,6 +6,15 @@ pipeline {
                 git url: 'https://github.com/Fstathios/lab.git', branch: 'main'
             }
         }
+        stage('Install kubectl') {
+            steps {
+                sh '''
+                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                    chmod +x kubectl
+                    mv kubectl /usr/local/bin/kubectl
+                '''
+            }
+        }
         stage('Deploy to Kubernetes') {
             steps {
                 sh 'kubectl apply -f Kubernetes/newapp/ -n vote-app'
