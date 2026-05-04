@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        PATH = "/home/jenkins/agent/bin:$PATH"
+    }
     stages {
         stage('Clone Repo') {
             steps {
@@ -9,9 +12,10 @@ pipeline {
         stage('Install kubectl') {
             steps {
                 sh '''
+                    mkdir -p /home/jenkins/agent/bin
                     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                     chmod +x kubectl
-                    mv kubectl /usr/local/bin/kubectl
+                    mv kubectl /home/jenkins/agent/bin/kubectl
                 '''
             }
         }
