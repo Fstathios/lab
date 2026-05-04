@@ -12,7 +12,8 @@ spec:
     helm:
       values: |
         adminPassword: "pass123"
-        type: ClusterIP
+        service:
+          type: ClusterIP
           port: 80
           targetPort: 3000
         persistence:
