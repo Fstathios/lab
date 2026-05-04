@@ -25,7 +25,7 @@ spec:
           dataStorage:
             enabled: true
             size: 10Gi
-            storageClass: "local-path" # Το standard για k3s/microk8s lab
+            storageClass: "standard" # Το standard για k3s/microk8s lab
           
           # Βασικές ρυθμίσεις λειτουργίας
           standalone:
