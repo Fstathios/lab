@@ -20,13 +20,8 @@ spec:
             - ReadWriteOnce
 
         ingress:
-          enabled: true
-          ingressClassName: nginx # ή traefik, ανάλογα τι έχεις
-          annotations:
-            kubernetes.io/tls-acme: "true"
-          hosts:
-            - grafana.lab.internal
-          path: /
+          enabled: false
+         
 
       
         sidecar:
