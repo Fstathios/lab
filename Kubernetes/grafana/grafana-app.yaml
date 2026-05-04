@@ -35,7 +35,7 @@ spec:
             label: grafana_dashboard  
   destination:
     server: https://kubernetes.default.svc
-    namespace: grafana
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
