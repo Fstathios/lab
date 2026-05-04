@@ -1,4 +1,6 @@
-adminPassword: "admin123"
+adminPassword:
+  existingSecret: grafana-secret
+  passwordKey: admin-password
 
 service:
   type: NodePort
