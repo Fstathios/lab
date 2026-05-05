@@ -1,5 +1,23 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  containers:
+                  - name: docker
+                    image: docker:24-dind
+                    securityContext:
+                      privileged: true
+                    env:
+                    - name: DOCKER_TLS_CERTDIR
+                      value: ""
+                  - name: jnlp
+                    image: jenkins/inbound-agent:latest
+            '''
+        }
+    }
     environment {
         PATH = "/home/jenkins/agent/bin:$PATH"
         IMAGE_NAME = "fstathios/myapp"
@@ -12,55 +30,41 @@ pipeline {
                     branch: 'main'
             }
         }
-
         stage('Install kubectl') {
             steps {
-                sh '''
-                    mkdir -p /home/jenkins/agent/bin
-                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                    chmod +x kubectl
-                    mv kubectl /home/jenkins/agent/bin/kubectl
-                '''
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} Kubernetes/newapp/'
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
+                container('docker') {
+                    sh '''
+                        mkdir -p /usr/local/bin
+                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        chmod +x kubectl
+                        mv kubectl /usr/local/bin/kubectl
+                    '''
                 }
             }
         }
-
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} Kubernetes/newapp/'
+                }
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                        sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
+                    }
+                }
+            }
+        }
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f Kubernetes/newapp/ -n vote-app'
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh 'kubectl get pods -n vote-app'
-            }
-        }
-    }
-    post {
-        success {
-            echo 'Deployment successful!'
-        }
-        failure {
-            echo 'Deployment failed!'
-        }
-    }
-}
+                container('docker') {
+                    sh 'kubectl apply -f Kubernetes/newapp/ -n vote-app'
+                }
