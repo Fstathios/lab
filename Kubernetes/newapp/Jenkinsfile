@@ -32,7 +32,7 @@ spec:
             steps {
                 container('docker') {
                     sh '''
-                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        wget -O kubectl "https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl"
                         chmod +x kubectl
                         mv kubectl /usr/local/bin/kubectl
                     '''
@@ -49,34 +49,4 @@ spec:
         stage('Push to Docker Hub') {
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                        sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
-                    }
-                }
-            }
-        }
-        stage('Deploy to Kubernetes') {
-            steps {
-                container('docker') {
-                    sh 'kubectl apply -f Kubernetes/newapp/ -n vote-app'
-                }
-            }
-        }
-        stage('Verify Deployment') {
-            steps {
-                container('docker') {
-                    sh 'kubectl get pods -n vote-app'
-                }
-            }
-        }
-    }
-    post {
-        success {
-            echo 'Deployment successful!'
-        }
-        failure {
-            echo 'Deployment failed!'
-        }
-    }
-}
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordV
