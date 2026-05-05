@@ -2,13 +2,17 @@ pipeline {
     agent any
     environment {
         PATH = "/home/jenkins/agent/bin:$PATH"
+        IMAGE_NAME = "fstathios/myapp"
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
     stages {
         stage('Clone Repo') {
             steps {
-                git url: 'https://github.com/Fstathios/lab.git', branch: 'main'
+                git url: 'https://github.com/Fstathios/lab.git', 
+                    branch: 'main'
             }
         }
+
         stage('Install kubectl') {
             steps {
                 sh '''
@@ -19,11 +23,32 @@ pipeline {
                 '''
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} Kubernetes/newapp/'
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 sh 'kubectl apply -f Kubernetes/newapp/ -n vote-app'
             }
         }
+
         stage('Verify Deployment') {
             steps {
                 sh 'kubectl get pods -n vote-app'
